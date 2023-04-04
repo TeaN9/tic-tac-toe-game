@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
 import Board from "./Board";
+import History from "./History";
 
 function Game() {
-  const [squares, setSquares] = useState(Array(9).fill(null));
+  const [history, setHistory] = useState([{ squares: Array(9).fill(null) }]);
   const [xIsNext, setXIsNext] = useState(true);
   const [winner, setWinner] = useState(null);
+  const [stepNumber, setStepNumber] = useState(0);
 
   //Declaring a Winner
   useEffect(() => {
-    const newWinner = calculateWinner(squares);
+    const newWinner = calculateWinner(history[history.length - 1].squares);
     setWinner(newWinner);
-  }, [squares]);
+  }, [history]);
 
   //function to check if a player has won.
   //If a player has won, we can display text such as “Winner: X” or “Winner: O”.
@@ -41,21 +43,31 @@ function Game() {
 
   //Handle player
   const handleClick = (i) => {
-    const newSquares = squares.slice();
+    const currentHistory = history.slice(0, stepNumber + 1);
+    const current = currentHistory[currentHistory.length - 1];
+    const squares = current.squares.slice();
 
-    if (calculateWinner(newSquares) || newSquares[i]) {
+    if (calculateWinner(squares) || squares[i]) {
       return;
     }
 
-    newSquares[i] = xIsNext ? "X" : "O";
+    squares[i] = xIsNext ? "X" : "O";
 
-    setSquares(newSquares);
+    setHistory(currentHistory.concat([{ squares: squares }]));
+    setStepNumber(currentHistory.length);
     setXIsNext((prevState) => !prevState);
+  };
+
+  //Move to step
+  const jumpTo = (step) => {
+    setStepNumber(step);
+    setXIsNext(step % 2 === 0);
   };
 
   //Restart game
   const handlRestart = () => {
-    setSquares(Array(9).fill(null));
+    setStepNumber(0);
+    setHistory([{ squares: Array(9).fill(null) }]);
     setXIsNext(true);
   };
 
@@ -64,8 +76,12 @@ function Game() {
       <h2 className="result">Winner is: {winner ? winner : "N/N"}</h2>
       <div className="game">
         <span className="player">Next player is: {xIsNext ? "X" : "O"}</span>
-        <Board squares={squares} handleClick={handleClick} />
+        <Board
+          squares={history[stepNumber].squares}
+          handleClick={handleClick}
+        />
       </div>
+      <History history={history} jumpTo={jumpTo} />
       <button onClick={handlRestart} className="restart-btn">
         Restart
       </button>
